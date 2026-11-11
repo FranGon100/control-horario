@@ -301,5 +301,5 @@ export function trabajadoHoyEnVivo(movs: Movimiento[], ahora: number): number {
     if (i === sesiones.length - 1 && tr.abierto?.tipo === 'trabajo' && !s.entrada.pendiente && ahora > tr.abierto.desde)
       tramos.push({ a: tr.abierto.desde, b: ahora });
   });
-  return partirPorDia(tramos).get(fechaDe(ahora)) ?? 0;
+  return Math.floor(partirPorDia(tramos).get(fechaDe(ahora)) ?? 0);
 }
