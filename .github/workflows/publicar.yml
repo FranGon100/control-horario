@@ -1,0 +1,52 @@
+name: Pruebas y publicación
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Pruebas del motor y de los datos
+        run: npm test
+      - name: Compilar
+        run: npm run build
+      - name: Instalar navegador para las pruebas
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas de extremo a extremo (móvil)
+        run: npx playwright test --trace off
+        env:
+          CI: 'true'
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publicar:
+    # Solo publica si las pruebas han pasado y es la rama principal.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: pruebas
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4
